@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<title>Advanced Pro Ultimate Resume Builder - Dashboard</title>
+<style>
+  /* Reset & base */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f9f9f9; color: #222;
+    display: flex; min-height: 100vh;
+  }
+  /* Sidebar */
+  #sidebar {
+    width: 260px; background: #222; color: #eee; display: flex; flex-direction: column;
+    padding: 1rem; overflow-y: auto;
+  }
+  #sidebar h2 {
+    font-weight: 700; font-size: 1.3rem; margin: 0 0 1rem 0; text-align: center;
+  }
+  #templateUl, #sampleResumeList {
+    list-style: none; padding: 0; margin: 0 0 1rem 0;
+    overflow-y: auto;
+    max-height: 35vh;
+  }
+  #templateUl li, #sampleResumeList button {
+    cursor: pointer; padding: 0.6rem 1rem; margin-bottom: 0.4rem;
+    border: none; background: #333; color: #eee; border-radius: 5px;
+    text-align: left; font-size: 0.95rem; transition: background 0.3s ease;
+    width: 100%;
+  }
+  #templateUl li.active, #sampleResumeList button.active,
+  #templateUl li:hover, #sampleResumeList button:hover {
+    background: #4caf50; color: white;
+  }
+  #sampleResumeList button {
+    font-weight: 600;
+  }
+
+  /* Main area */
+  #main {
+    flex-grow: 1; display: flex; flex-direction: column;
+    padding: 1rem 2rem; overflow-y: auto;
+  }
+  #main h1 {
+    margin-top: 0; font-weight: 700; font-size: 1.8rem;
+    border-bottom: 2px solid #4caf50; padding-bottom: 0.4rem;
+  }
+
+  /* Form and preview */
+  #formPreviewContainer {
+    display: flex; gap: 2rem; margin-top: 1rem; flex-wrap: wrap;
+  }
+  form#resumeForm {
+    flex: 1 1 400px; background: white; padding: 1rem 1.5rem;
+    border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.05);
+    max-height: 80vh; overflow-y: auto;
+  }
+  form#resumeForm label {
+    display: block; margin-top: 0.9rem; font-weight: 600; color: #444;
+  }
+  form#resumeForm input[type=text],
+  form#resumeForm input[type=email],
+  form#resumeForm textarea {
+    width: 100%; padding: 0.5rem; margin-top: 0.3rem;
+    border: 1px solid #ccc; border-radius: 4px;
+    font-size: 0.95rem; font-family: inherit;
+    resize: vertical;
+  }
+  form#resumeForm textarea {
+    min-height: 60px; font-family: monospace;
+  }
+
+  /* Preview */
+  #resumePreview {
+    flex: 1 1 500px; background: white; padding: 2rem 2.5rem;
+    border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-height: 80vh; overflow-y: auto;
+    color: #111;
+  }
+  #resumePreview h2 {
+    margin-top: 0; font-size: 2rem; border-bottom: 2px solid #4caf50;
+    padding-bottom: 0.3rem;
+    font-weight: 700;
+  }
+  #resumePreview p {
+    margin: 0.3rem 0;
+  }
+  #resumePreview .skill {
+    display: inline-block;
+    background: #4caf50;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    margin: 2px 4px 2px 0;
+  }
+  #resumePreview h3 {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.2rem;
+    margin-top: 1.5rem;
+  }
+  .exp-item, .edu-item {
+    margin-bottom: 1rem;
+  }
+  .exp-item h4, .edu-item h4 {
+    margin: 0 0 0.1rem 0;
+    font-weight: 600;
+  }
+  .exp-item p, .edu-item p {
+    margin: 0.1rem 0;
+    font-size: 0.9rem;
+  }
+  /* Scrollbar for sidebar and main */
+  #sidebar::-webkit-scrollbar, #sampleResumeList::-webkit-scrollbar {
+    width: 6px;
+  }
+  #sidebar::-webkit-scrollbar-thumb, #sampleResumeList::-webkit-scrollbar-thumb {
+    background-color: #555; border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+  <button id="downloadPdfBtn">Download PDF</button>
+
+
+<div id="sidebar">
+  <h2>Select Template</h2>
+  <ul id="templateUl"></ul>
+
+  <h2>Sample Resumes</h2>
+  <div id="sampleResumeList"></div>
+</div>
+
+<div id="main">
+  <h1>Resume Builder Dashboard</h1>
+  <div id="formPreviewContainer">
+    <form id="resumeForm" onsubmit="return false;">
+      <label for="fullName">Full Name</label>
+      <input id="fullName" type="text" placeholder="John Doe" />
+
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="john@example.com" />
+
+      <label for="phone">Phone</label>
+      <input id="phone" type="text" placeholder="+1 234 567 890" />
+
+      <label for="address">Address</label>
+      <input id="address" type="text" placeholder="123 Main St, City, Country" />
+
+      <label for="summary">Professional Summary</label>
+      <textarea id="summary" placeholder="Write a brief summary about yourself..."></textarea>
+
+      <label for="skills">Skills (comma separated)</label>
+      <input id="skills" type="text" placeholder="JavaScript, HTML, CSS" />
+
+      <label for="experience">Experience (JSON array)</label>
+      <textarea id="experience" placeholder='[{"company":"Company","role":"Role","start":"Year","end":"Year","desc":"Description"}]'></textarea>
+
+      <label for="education">Education (JSON array)</label>
+      <textarea id="education" placeholder='[{"degree":"Degree","school":"School","year":"Year"}]'></textarea>
+    </form>
+
+    <div id="resumePreview" aria-label="Resume Preview" tabindex="0">
+      <!-- Live preview will appear here -->
+    </div>
+  </div>
+</div>
+
+<script>
+  // Templates data with samples
+  const templates = [
+    {
+      id: "modernPro",
+      name: "Modern Professional",
+      samples: [
+        {
+          title: "Modern Pro 1",
+          data: {
+            fullName: "John Smith",
+            email: "john.smith@email.com",
+            phone: "+1 555 123 4567",
+            address: "123 Elm Street, Springfield",
+            summary: "Experienced web developer specialized in front-end technologies.",
+            skills: ["JavaScript", "React", "CSS", "HTML"],
+            experience: [
+              { company: "Tech Solutions", role: "Frontend Developer", start: "2018", end: "Present", desc: "Developed user interfaces for web apps." }
+            ],
+            education: [
+              { degree: "B.Sc Computer Science", school: "State University", year: "2017" }
+            ]
+          }
+        },
+        {
+          title: "Modern Pro 2",
+          data: {
+            fullName: "Alice Johnson",
+            email: "alice.johnson@email.com",
+            phone: "+1 555 987 6543",
+            address: "456 Oak Avenue, Metropolis",
+            summary: "Full-stack developer with expertise in Node.js and React.",
+            skills: ["Node.js", "React", "MongoDB"],
+            experience: [
+              { company: "WebWorks", role: "Full-stack Developer", start: "2019", end: "Present", desc: "Built and maintained full-stack web applications." }
+            ],
+            education: [
+              { degree: "B.Sc Information Technology", school: "Tech Institute", year: "2018" }
+            ]
+          }
+        },
+        {
+          title: "Modern Pro 3",
+          data: {
+            fullName: "Michael Lee",
+            email: "michael.lee@email.com",
+            phone: "+1 555 456 7890",
+            address: "789 Pine Road, Gotham",
+            summary: "UI/UX designer focused on creating intuitive interfaces.",
+            skills: ["Figma", "Sketch", "Adobe XD"],
+            experience: [
+              { company: "Creative Minds", role: "UI/UX Designer", start: "2017", end: "Present", desc: "Designed wireframes and prototypes." }
+            ],
+            education: [
+              { degree: "B.A. Graphic Design", school: "Art Academy", year: "2016" }
+            ]
+          }
+        },
+        {
+          title: "Modern Pro 4",
+          data: {
+            fullName: "Emma Davis",
+            email: "emma.davis@email.com",
+            phone: "+1 555 321 6547",
+            address: "321 Birch Lane, Star City",
+            summary: "Digital marketer specializing in SEO and content marketing.",
+            skills: ["SEO", "Google Analytics", "Content Strategy"],
+            experience: [
+              { company: "MarketPro", role: "Digital Marketer", start: "2016", end: "Present", desc: "Improved website rankings and traffic." }
+            ],
+            education: [
+              { degree: "B.A. Marketing", school: "City University", year: "2015" }
+            ]
+          }
+        },
+        {
+          title: "Modern Pro 5",
+          data: {
+            fullName: "David Brown",
+            email: "david.brown@email.com",
+            phone: "+1 555 654 3210",
+            address: "654 Cedar Street, Central City",
+            summary: "Project manager with 10+ years experience in IT projects.",
+            skills: ["Project Management", "Agile", "Scrum"],
+            experience: [
+              { company: "Innovatech", role: "Project Manager", start: "2012", end: "Present", desc: "Managed multiple software development projects." }
+            ],
+            education: [
+              { degree: "MBA", school: "Business School", year: "2011" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      id: "classic",
+      name: "Classic Resume",
+      samples: [
+        {
+          title: "Classic 1",
+          data: {
+            fullName: "Sarah Wilson",
+            email: "sarah.wilson@email.com",
+            phone: "+44 123 456 789",
+            address: "10 Downing Street, London",
+            summary: "Experienced accountant with attention to detail.",
+            skills: ["Accounting", "Excel", "Financial Analysis"],
+            experience: [
+              { company: "Finance Corp", role: "Accountant", start: "2015", end: "Present", desc: "Handled monthly reports and audits." }
+            ],
+            education: [
+              { degree: "B.Com Accounting", school: "London University", year: "2014" }
+            ]
+          }
+        },
+        {
+          title: "Classic 2",
+          data: {
+            fullName: "Tom Harris",
+            email: "tom.harris@email.com",
+            phone: "+44 987 654 321",
+            address: "20 Baker Street, London",
+            summary: "Mechanical engineer with expertise in CAD software.",
+            skills: ["AutoCAD", "SolidWorks", "Project Planning"],
+            experience: [
+              { company: "Engineering Ltd", role: "Mechanical Engineer", start: "2013", end: "Present", desc: "Designed mechanical parts and systems." }
+            ],
+            education: [
+              { degree: "B.Eng Mechanical", school: "Tech University", year: "2012" }
+            ]
+          }
+        },
+        {
+          title: "Classic 3",
+          data: {
+            fullName: "Linda Green",
+            email: "linda.green@email.com",
+            phone: "+44 555 666 777",
+            address: "15 King's Road, London",
+            summary: "Teacher with passion for child development.",
+            skills: ["Classroom Management", "Curriculum Development"],
+            experience: [
+              { company: "High School", role: "Teacher", start: "2010", end: "Present", desc: "Taught English Literature." }
+            ],
+            education: [
+              { degree: "M.Ed", school: "Education College", year: "2009" }
+            ]
+          }
+        },
+        {
+          title: "Classic 4",
+          data: {
+            fullName: "James Carter",
+            email: "james.carter@email.com",
+            phone: "+44 888 999 000",
+            address: "5 Queen Street, London",
+            summary: "Sales manager with strong negotiation skills.",
+            skills: ["Sales", "Negotiation", "CRM"],
+            experience: [
+              { company: "Retail Group", role: "Sales Manager", start: "2014", end: "Present", desc: "Increased sales by 20%." }
+            ],
+            education: [
+              { degree: "BBA", school: "Business College", year: "2013" }
+            ]
+          }
+        },
+        {
+          title: "Classic 5",
+          data: {
+            fullName: "Rachel Adams",
+            email: "rachel.adams@email.com",
+            phone: "+44 111 222 333",
+            address: "8 Victoria Street, London",
+            summary: "Graphic designer with experience in branding.",
+            skills: ["Adobe Photoshop", "Illustrator", "Branding"],
+            experience: [
+              { company: "Design Studio", role: "Graphic Designer", start: "2011", end: "Present", desc: "Created brand identities." }
+            ],
+            education: [
+              { degree: "BFA", school: "Art School", year: "2010" }
+            ]
+          }
+        }
+      ]
+    }
+  ];
+
+  // Elements refs
+  const templateUl = document.getElementById('templateUl');
+  const sampleResumeList = document.getElementById('sampleResumeList');
+
+  const fullNameInput = document.getElementById('fullName');
+  const emailInput = document.getElementById('email');
+  const phoneInput = document.getElementById('phone');
+  const addressInput = document.getElementById('address');
+  const summaryInput = document.getElementById('summary');
+  const skillsInput = document.getElementById('skills');
+  const experienceInput = document.getElementById('experience');
+  const educationInput = document.getElementById('education');
+
+  const resumePreview = document.getElementById('resumePreview');
+
+  // State
+  let currentTemplateIndex = 0;
+  let currentSampleIndex = 0;
+
+  // Escape HTML to prevent injection
+  function escapeHTML(str) {
+    return String(str).replace(/[&<>"']/g, function (m) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
+    });
+  }
+
+  // Render template list sidebar
+  function renderTemplates() {
+    templateUl.innerHTML = "";
+    templates.forEach((tpl, idx) => {
+      const li = document.createElement('li');
+      li.textContent = tpl.name;
+      li.classList.toggle('active', idx === currentTemplateIndex);
+      li.onclick = () => {
+        if (currentTemplateIndex !== idx) {
+          currentTemplateIndex = idx;
+          currentSampleIndex = 0;
+          renderTemplates();
+          renderSamples();
+          loadSampleToForm(currentSampleIndex);
+        }
+      };
+      templateUl.appendChild(li);
+    });
+  }
+
+  // Render sample resumes list for current template
+  function renderSamples() {
+    sampleResumeList.innerHTML = "";
+    const samples = templates[currentTemplateIndex].samples;
+    samples.forEach((sample, idx) => {
+      const btn = document.createElement('button');
+      btn.textContent = sample.title;
+      btn.classList.toggle('active', idx === currentSampleIndex);
+      btn.onclick = () => {
+        if (currentSampleIndex !== idx) {
+          currentSampleIndex = idx;
+          renderSamples();
+          loadSampleToForm(currentSampleIndex);
+        }
+      };
+      sampleResumeList.appendChild(btn);
+    });
+  }
+
+  // Load sample data into form inputs
+  function loadSampleToForm(sampleIndex) {
+    const sampleData = templates[currentTemplateIndex].samples[sampleIndex].data;
+    fullNameInput.value = sampleData.fullName || "";
+    emailInput.value = sampleData.email || "";
+    phoneInput.value = sampleData.phone || "";
+    addressInput.value = sampleData.address || "";
+    summaryInput.value = sampleData.summary || "";
+    skillsInput.value = (sampleData.skills || []).join(", ");
+    experienceInput.value = JSON.stringify(sampleData.experience || [], null, 2);
+    educationInput.value = JSON.stringify(sampleData.education || [], null, 2);
+    updateResume();
+  }
+
+  // Update the resume preview based on form data
+  function updateResume() {
+    try {
+      const skills = skillsInput.value.split(",").map(s => s.trim()).filter(Boolean);
+      const experience = JSON.parse(experienceInput.value);
+      const education = JSON.parse(educationInput.value);
+
+      let expHtml = "";
+      experience.forEach(exp => {
+        expHtml += `<div class="exp-item">
+          <h4>${escapeHTML(exp.role)} at ${escapeHTML(exp.company)}</h4>
+          <p><em>${escapeHTML(exp.start)} - ${escapeHTML(exp.end)}</em></p>
+          <p>${escapeHTML(exp.desc)}</p>
+        </div>`;
+      });
+
+      let eduHtml = "";
+      education.forEach(edu => {
+        eduHtml += `<div class="edu-item">
+          <h4>${escapeHTML(edu.degree)}</h4>
+          <p>${escapeHTML(edu.school)} - ${escapeHTML(edu.year)}</p>
+        </div>`;
+      });
+
+      resumePreview.innerHTML = `
+        <h2>${escapeHTML(fullNameInput.value)}</h2>
+        <p><strong>Email:</strong> ${escapeHTML(emailInput.value)}</p>
+        <p><strong>Phone:</strong> ${escapeHTML(phoneInput.value)}</p>
+        <p><strong>Address:</strong> ${escapeHTML(addressInput.value)}</p>
+        <p><strong>Summary:</strong> ${escapeHTML(summaryInput.value)}</p>
+        <h3>Skills</h3>
+        <ul>${skills.map(s => `<li>${escapeHTML(s)}</li>`).join("")}</ul>
+        <h3>Experience</h3>
+        ${expHtml}
+        <h3>Education</h3>
+        ${eduHtml}
+      `;
+    } catch (e) {
+      resumePreview.innerHTML = `<p style="color:red;">Error parsing JSON for Experience or Education.</p>`;
+    }
+  }
+
+  // Event listeners for input changes to update preview live
+  [
+    fullNameInput, emailInput, phoneInput, addressInput,
+    summaryInput, skillsInput, experienceInput, educationInput
+  ].forEach(input => {
+    input.addEventListener('input', updateResume);
+  });
+
+  // Initial rendering
+  renderTemplates();
+  renderSamples();
+  loadSampleToForm(0);
+ document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+  const resumeElement = document.getElementById('resumePreview');
+
+  html2canvas(resumeElement, { scale: 2 }).then(canvas => {
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    // Calculate width and height to maintain aspect ratio on A4 size
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('resume.pdf');
+  }).catch(err => {
+    alert('Failed to generate PDF: ' + err);
+  });
+});
+
+
+</script>
+</body>
+</html>
